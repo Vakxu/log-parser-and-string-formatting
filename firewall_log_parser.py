@@ -11,6 +11,8 @@ Mar 02 2015 08:54:47 asa : %ASA-6-302015: Built outbound UDP connection 1956249 
 Mar 02 2015 08:54:47 asa : %ASA-6-302013: Built outbound TCP connection 1956250 for outside:212.10.212.59/443 (212.10.212.59/443) to wifi:10.20.0.100/43500 (52.1.119.182/43500)
 Mar 02 2015 08:55:23 asa : %ASA-6-302013: Built inbound TCP connection 1956358 for outside:10.10.62.62/56360 (10.10.62.62/56360) to identity:52.1.119.182/22 (52.1.119.182/22)
 Mar 02 2015 08:57:28 asa : %ASA-6-302013: Built outbound TCP connection 1956389 for outside:10.79.62.93/80 (10.79.62.93/80) to wifi:10.20.0.249/64162 (52.1.119.182/64162)'''
+traffic = {}
+lista, printlist = [], []
 
 def process_line(l):
     data = {}
@@ -38,38 +40,32 @@ def process_data(d, stats):
     connportproto = connports[outport]
     connportproto[proto] = connportproto.get(proto, 0) + 1
     
-traffic = {}
+def make_list_from_dict(d, li):
+    for i, j in d.items():
+        for k, l in j.items():
+            for m, n in l.items(): 
+                li.append((i, k, m, n))
+    li.sort(key=lambda tup: tup[1])
+    li.sort(key=lambda tup: tup[3], reverse=True)
+
+def make_formatted_printlist(li, prntli):
+    for i, l in enumerate(li):
+        prntli.append([' '] * 60)
+        for ind, char in enumerate(l[0]): prntli[i][ind] = char
+        for ind, char in enumerate(l[1]): prntli[i][ind+34] = char
+        for ind, char in enumerate(l[2]): prntli[i][ind+39] = char
+        for ind, char in enumerate(`l[3]`): prntli[i][ind+43] = 'hitcount = ' + char
+        
+def print_connections_list(li):
+    for l in li: print ''.join(l)
 
 
+# Go trough the logs line by line        
 for line in log.splitlines():
     if len(line) < 1: continue
     line = line.strip()
     process_data(process_line(line), traffic)
 
-lista = []
-
-for i, j in traffic.items():
-    for k, l in j.items():
-        for m, n in l.items():
-            outp = i
-            while len(outp) < 30: outp = outp + ' '
-            outp = outp + k
-            while len(outp) < 35: outp = outp + ' '
-            outp = outp + m
-            while len(outp) < 40: outp = outp + ' '
-            outp = outp + 'hitcount = ' + str(n)
-            lista.append((i, k, m, n))
-
-lista.sort(key=lambda tup: tup[1])
-lista.sort(key=lambda tup: tup[3], reverse=True)
-
-printlist = []
-for indx, i in enumerate(lista):
-    printlist.append([' '] * 60)
-    for ind, char in enumerate(i[0]): printlist[indx][ind] = char
-    for ind, char in enumerate(i[1]): printlist[indx][ind+34] = char
-    for ind, char in enumerate(i[2]): printlist[indx][ind+39] = char
-    for ind, char in enumerate(`i[3]`): printlist[indx][ind+43] = 'hitcount = ' + char
-
-for item in printlist:
-    print ''.join(item)
+make_list_from_dict(traffic, lista)
+make_formatted_printlist(lista, printlist)
+print_connections_list(printlist)
